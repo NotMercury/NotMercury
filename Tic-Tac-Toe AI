@@ -1,0 +1,111 @@
+def memoization(evaluatedGames={}):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            gameRepr = ''.join(cell for row in args[0] for cell in row)
+            if gameRepr not in evaluatedGames:
+                evaluatedGames[gameRepr] = func(*args, **kwargs)
+
+            return evaluatedGames[gameRepr]
+        return wrapper
+    return decorator
+
+@memoization()
+def minimax(gameBoard, aiTurn, lastMove, valueAbove):
+    movesLeft = getMoves(gameBoard)
+    gameState = getGameState(gameBoard, lastMove)
+    if gameState == 'X':
+        return -1 * (len(movesLeft) + 1)
+    elif gameState == 'O':
+        return len(movesLeft) + 1
+    elif len(movesLeft) == 0:
+        return 0
+
+    if aiTurn:
+        maxScore = float('-inf')
+        for x, y in movesLeft:
+            gameBoard[x][y] = 'O'
+            value = minimax(gameBoard, False, (x, y), maxScore)
+            gameBoard[x][y] = ' '
+            if value > maxScore:
+                maxScore = value
+                if maxScore >= valueAbove:
+                    return maxScore
+
+        return maxScore
+    else:
+        minScore = float('inf')
+        for x, y in movesLeft:
+            gameBoard[x][y] = 'X'
+            value = minimax(gameBoard, True, (x, y), minScore)
+            gameBoard[x][y] = ' '
+            if value < minScore:
+                minScore = value
+                if value <= valueAbove:
+                    return minScore
+
+        return minScore
+            
+        
+    
+def getMoves(gameBoard):
+    return [(x, y) for x in range(3) for y in range(3) if gameBoard[x][y] == ' ']
+
+def getGameState(gameBoard, lastMove):
+    x, y = lastMove
+    
+    if gameBoard[x][0] == gameBoard[x][1] == gameBoard[x][2] and gameBoard[x][0] != ' ':
+        return gameBoard[x][0]
+    elif gameBoard[0][y] == gameBoard[1][y] == gameBoard[2][y] and gameBoard[0][y] != ' ':
+        return gameBoard[0][y]
+    elif gameBoard[0][0] == gameBoard[1][1] == gameBoard[2][2] and gameBoard[0][0] != ' ':
+        return gameBoard[0][0]
+    elif gameBoard[0][2] == gameBoard[1][1] == gameBoard[2][0] and gameBoard[0][2] != ' ':
+        return gameBoard[0][2]
+
+def displayBoard(gameBoard):
+    print('  0 1 2')
+    for y in range(3):
+        print(' _______')
+        print(f'{y}|', end='')
+        for x in range(3):
+            print(gameBoard[x][y] + '|', end='')
+        print()
+
+        
+gameBoard = [[' ', ' ', ' '] for i in range(3)]
+x = 0
+y = 0
+
+displayBoard(gameBoard)
+
+while not getGameState(gameBoard, (x, y))  and (movesLeft := len(getMoves(gameBoard)) > 0):
+    x, y = [int(i) for i in input('Enter where you want to play x and y seperated by a space e.g 0 1').split()]
+    if gameBoard[x][y] != ' ':
+        print(f'That space is already taken by {gameBoard[x][y]}')
+        continue
+    gameBoard[x][y] = 'X'
+      
+    movesLeft = getMoves(gameBoard)
+
+    if len(movesLeft) == 0:
+        break
+
+    displayBoard(gameBoard)
+
+    values = []
+    bestMoveValue = float('-inf')
+    start = time.time()
+    for x, y in movesLeft:
+        gameBoard[x][y] = "O"
+        value = minimax(gameBoard, False, (x, y), bestMoveValue)
+        values.append(value)
+        if value > bestMoveValue:
+            bestMoveValue = value
+            bestMove = (x, y)
+        gameBoard[x][y] = " "
+
+    x, y = bestMove
+
+    
+    gameBoard[x][y] = 'O'
+    displayBoard(gameBoard)
